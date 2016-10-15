@@ -7,7 +7,7 @@
 // Plymorphism in C
 
 typedef struct {
-  int kind; // 0 = plane, 1 = sphere
+  int kind; // 0 = plane, 1 = sphere 2 = plane 3=light
   char* name;
   double color[3];
   union {
@@ -18,11 +18,21 @@ typedef struct {
     struct {	
       double center[3];
       double radius;
+	  double specular_color[3];
+	  double diffuse_color[3];
     } sphere;
     struct {
 	  double center[3];
       double normal[3];
     } plane;
+	struct {
+	  double center[3];
+      double direction[3];
+	  double radial-a2;
+	  double radial-a1;
+	  double radial-a0;
+	  double angular-a0;
+    } light;
   };
 } Object;
 
@@ -205,6 +215,23 @@ Object** valuesetter(int type,char* key ,double value,Object** objects,int eleme
 			fprintf(stderr,"Error:sphere does not support %s\n",key);
 			exit(1);
 		}
+	}else if (type == 3) {
+		if ((strcmp(key, "radial-a0") == 0)){
+			objects[elements]->light.radial-a0 = value;
+			return objects;
+		}else if ((strcmp(key, "radial-a1") == 0)){
+			objects[elements]->light.radial-a1 = value;
+			return objects;
+		}else if ((strcmp(key, "radial-a2") == 0)){
+			objects[elements]->light.radial-a2 = value;
+			return objects;
+		}else if ((strcmp(key, "angular-a0") == 0)){
+			objects[elements]->light.angular-a0 = value;
+			return objects;
+		}else{
+			fprintf(stderr,"Error:light does not support %s\n",key);
+			exit(1);
+		}
 	}else{
 		fprintf(stderr,"Error: Key %s is not supported\n",type);
 		exit(1);
@@ -220,6 +247,26 @@ Object** vectorsetter(int type,char* key ,double* value,Object** objects,int ele
 					exit(1);
 				}else{
 			   objects[elements]->color[i] = value[i];
+				}
+			}
+			return objects;
+		}else if ((strcmp(key, "diffuse_color") == 0)){
+			for (int i=0;i<=2;i++){
+				if (objects[elements]->sphere.diffuse_color[i] >1 || objects[elements]->sphere.diffuse_color[i]< 0){
+					fprintf(stderr,"Error:value in diffuse_color for sphere is not inbetween 0 and 1\n");
+					exit(1);
+				}else{
+			   objects[elements]->sphere.diffuse_color[i] = value[i];
+				}
+			}
+			return objects;
+		}else if ((strcmp(key, "specular_color") == 0)){
+			for (int i=0;i<=2;i++){
+				if (objects[elements]->sphere.specular_color[i] >1 || objects[elements]->sphere.specular_color[i]< 0){
+					fprintf(stderr,"Error:value in specular_color for sphere is not inbetween 0 and 1\n");
+					exit(1);
+				}else{
+			   objects[elements]->sphere.specular_color[i] = value[i];
 				}
 			}
 			return objects;
@@ -255,6 +302,27 @@ Object** vectorsetter(int type,char* key ,double* value,Object** objects,int ele
 			return objects;
 		}else{
 			fprintf(stderr,"Error:plane does not support %s\n",key);
+			exit(1);
+		}
+		
+	}else if (type == 3) {
+		if ((strcmp(key, "color") == 0)){			
+			for (int i=0;i<=2;i++){
+				objects[elements]->color[i] = value[i];
+			}
+			return objects;
+		}else if ((strcmp(key, "position") == 0)){
+			for (int i=0;i<=2;i++){
+			    objects[elements]->light.center[i] = value[i];
+			}
+			return objects;
+		}else if ((strcmp(key, "direction") == 0)){
+			for (int i=0;i<=2;i++){
+			    objects[elements]->light.direction[i] = value[i];
+			}
+			return objects;
+		}else{
+			fprintf(stderr,"Error:light does not support %s\n",key);
 			exit(1);
 		}
 		
@@ -325,6 +393,11 @@ Object** read_scene(char* filename , Object** objects) {
 		  objects[elements]->name = "plane";
 		  objects[elements]->kind = 0;
 		  type =2;
+      } else if (strcmp(value, "light") == 0) {
+		  objects[elements] = malloc(sizeof(Object));
+		  objects[elements]->name = "light";
+		  objects[elements]->kind = 3;
+		  type =3;
       } else {
 	fprintf(stderr, "Error: Unknown type, \"%s\", on line number %d.\n", value, line);
 	exit(1);
@@ -347,12 +420,19 @@ Object** read_scene(char* filename , Object** objects) {
 	  skip_ws(json);
 	  if ((strcmp(key, "width") == 0) ||
 	      (strcmp(key, "height") == 0) ||
-	      (strcmp(key, "radius") == 0)) {
+	      (strcmp(key, "radius") == 0) ||
+	      (strcmp(key, "radial-a0") == 0) ||
+	      (strcmp(key, "radial-a1") == 0) ||
+	      (strcmp(key, "radial-a2") == 0) ||
+	      (strcmp(key, "angular-a0") == 0)) {
 	    double value = next_number(json);
 		valuesetter(type, key,value, objects,elements);
 	  } else if ((strcmp(key, "color") == 0) ||
 		     (strcmp(key, "position") == 0) ||
-		     (strcmp(key, "normal") == 0)) {
+		     (strcmp(key, "normal") == 0) ||
+	      (strcmp(key, "direction") == 0) ||
+	      (strcmp(key, "diffuse_color") == 0) ||
+	      (strcmp(key, "specular_color") == 0)) {
 	    double* value = next_vector(json);
 		vectorsetter(type, key,value,objects,elements);
 	  } else {
