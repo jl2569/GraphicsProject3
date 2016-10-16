@@ -28,10 +28,10 @@ typedef struct {
 	struct {
 	  double center[3];
       double direction[3];
-	  double radial-a2;
-	  double radial-a1;
-	  double radial-a0;
-	  double angular-a0;
+	  double radiala2;
+	  double radiala1;
+	  double radiala0;
+	  double angulara0;
     } light;
   };
 } Object;
@@ -217,16 +217,16 @@ Object** valuesetter(int type,char* key ,double value,Object** objects,int eleme
 		}
 	}else if (type == 3) {
 		if ((strcmp(key, "radial-a0") == 0)){
-			objects[elements]->light.radial-a0 = value;
+			objects[elements]->light.radiala0 = value;
 			return objects;
 		}else if ((strcmp(key, "radial-a1") == 0)){
-			objects[elements]->light.radial-a1 = value;
+			objects[elements]->light.radiala1 = value;
 			return objects;
 		}else if ((strcmp(key, "radial-a2") == 0)){
-			objects[elements]->light.radial-a2 = value;
+			objects[elements]->light.radiala2 = value;
 			return objects;
 		}else if ((strcmp(key, "angular-a0") == 0)){
-			objects[elements]->light.angular-a0 = value;
+			objects[elements]->light.angulara0 = value;
 			return objects;
 		}else{
 			fprintf(stderr,"Error:light does not support %s\n",key);
@@ -508,7 +508,7 @@ int main(int argc, char *argv[] ) {
   double pixheight = h / M;
   double pixwidth = w / N;
   find =0;
-  while(objects[find]->kind != NULL ){
+  while(objects[find]->name != NULL){
 	  find +=1;
   }
   for (int y = 0; y < M; y += 1) {
@@ -524,7 +524,7 @@ int main(int argc, char *argv[] ) {
 
       double best_t = INFINITY;
 	  int flash = 2;
-      for (int i=0; i<=find; i += 1) {
+      for (int i=0; i<find; i += 1) {
 		double t = 0;
 		switch(objects[i]->kind) {	
 		case 0:
@@ -533,11 +533,19 @@ int main(int argc, char *argv[] ) {
 				    objects[i]->plane.normal);
 			break;
 		case 1:
+			if(objects[i]->sphere.radius == 0){
+				t = sphere_intersection(Ro, Rd,
+					objects[i]->sphere.center,
+					1);
+			}else{
 			t = sphere_intersection(Ro, Rd,
 					objects[i]->sphere.center,
 					objects[i]->sphere.radius);
+			}
 			break;
 		case 2:
+			break;
+		case 3:
 			break;
 		default:
 			// Horrible error
@@ -546,23 +554,29 @@ int main(int argc, char *argv[] ) {
 		if (t > 0 && t < best_t) {
 			best_t = t;
 			flash = i;
+			
 		}
       }
 	  // if there is a value in the best_t then it calls for the color to be implemented.
       if (best_t > 0 && best_t != INFINITY) {
-		double temp;
-		char word[1000];
-		temp= objects[flash]->color[0] *255;
-		sprintf(word,"%lf ",temp);
-		fputs(word,fp);
-		temp= objects[flash]->color[1] *255;
-		sprintf(word," %lf ",temp);
-		fputs(word,fp);
-		temp= objects[flash]->color[2] *255;
-		sprintf(word,"%lf\n",temp);
-		fputs(word,fp);
-      } else {
+		//double temp;
+		//char word[1000];
+		//
+		//temp= objects[flash]->color[0] *255;
+		//sprintf(word,"%lf ",temp);
+		//fputs(word,fp);
+		//temp= objects[flash]->color[1] *255;
+		//sprintf(word," %lf ",temp);
+		//fputs(word,fp);
+		//temp= objects[flash]->color[2] *255;
+		//sprintf(word,"%lf\n",temp);
+		//fputs(word,fp);
+		
+		// for not breaking purposes
 		fputs("0 0 0\n",fp);
+      } else {
+		fputs("1 255 123\n",fp);
+		
       }
       
     }
