@@ -1,10 +1,4 @@
-double power(double num, int power){
-	double final = num;
-	for (int i = 0; i < power; i++){
-		final = final*num;
-	}
-	return final;
-}
+
 
 double fang(Object* light , Object* object){
 	if (light->direction[0] == 0 && light->direction[1] == 0 && light->direction[2] == 0 ){
@@ -19,13 +13,14 @@ double fang(Object* light , Object* object){
 	if (acos(final) > light->light.angulara0){
 		return 0 ;
 	}else{
-		return  power(final ,light->light.angulara0 );
+		return  pow(final ,light->light.angulara0 );
 	}
 }
 
-double frad(Object* light, Object* object){
-	
-}
+double frad(Object* light, double d){
+	double eq  = light->light.radiala0 + light->light.radiala1*d +light->light.radiala2*pow(d,2);
+	return 1/eq;
+	}
 
 
 for (int y = 0; y < M; y += 1) {
@@ -143,11 +138,17 @@ for (int y = 0; y < M; y += 1) {
 	normalize(Ron);
 	R = light_position-2(light_position[0]*Ron[0] + light_position[1]*Ron[1] + light_position[2]*Ron[2])*Ron;
 	V = Rd;
-	diffuse = ...; // uses object's diffuse color
-	specular = ...; // uses object's specular color
-	color[0] += frad() * fang() * (diffuse + specular);
-	color[1] += frad() * fang() * (diffuse + specular);
-	color[2] += frad() * fang() * (diffuse + specular);
+	double diffuse[3] =  {1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[0],
+	1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[1],
+	1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[2],
+	}; // uses object's diffuse color
+	double specular[3] = {pow(R*V,N)*objects[closest_shadow_object]->sphere.specular_color[0],
+	objects[closest_shadow_object]->sphere.diffuse_color[1],
+	objects[closest_shadow_object]->sphere.diffuse_color[2]
+	}; // uses object's specular color
+	color[0] += frad() * fang() * (diffuse[0] + specular[0]);
+	color[1] += frad() * fang() * (diffuse[1] + specular[1]);
+	color[2] += frad() * fang() * (diffuse[2] + specular[2]);
       }
     }
     // The color has now been calculated
