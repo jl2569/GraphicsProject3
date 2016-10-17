@@ -511,7 +511,7 @@ int main(int argc, char *argv[] ) {
   while(objects[find]->name != NULL){
 	  find +=1;
   }
-  for (int y = 0; y < M; y += 1) {
+  for (int y = M; y > 0; y -= 1) {
     for (int x = 0; x < N; x += 1) {
       double Ro[3] = {0, 0, 0};
       // Rd = normalize(P - Ro)
@@ -559,23 +559,23 @@ int main(int argc, char *argv[] ) {
       }
 	  // if there is a value in the best_t then it calls for the color to be implemented.
       if (best_t > 0 && best_t != INFINITY) {
-		//double temp;
-		//char word[1000];
-		//
-		//temp= objects[flash]->color[0] *255;
-		//sprintf(word,"%lf ",temp);
-		//fputs(word,fp);
-		//temp= objects[flash]->color[1] *255;
-		//sprintf(word," %lf ",temp);
-		//fputs(word,fp);
-		//temp= objects[flash]->color[2] *255;
-		//sprintf(word,"%lf\n",temp);
-		//fputs(word,fp);
+		double temp;
+		char word[1000];
+		
+		temp= objects[flash]->color[0] *255;
+		sprintf(word,"%lf ",temp);
+		fputs(word,fp);
+		temp= objects[flash]->color[1] *255;
+		sprintf(word," %lf ",temp);
+		fputs(word,fp);
+		temp= objects[flash]->color[2] *255;
+		sprintf(word,"%lf\n",temp);
+		fputs(word,fp);
 		
 		// for not breaking purposes
-		fputs("0 0 0\n",fp);
+		//fputs("0 0 0\n",fp);
       } else {
-		fputs("1 255 123\n",fp);
+		fputs("0 0 0\n",fp);
 		
       }
       
