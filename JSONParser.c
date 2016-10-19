@@ -24,6 +24,8 @@ typedef struct {
     struct {
 	  double center[3];
       double normal[3];
+	  double specular_color[3];
+	  double diffuse_color[3];
     } plane;
 	struct {
 	  double center[3];

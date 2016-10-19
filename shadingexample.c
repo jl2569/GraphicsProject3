@@ -1,26 +1,64 @@
-
-
-double fang(Object* light , Object* object){
+double* diffuse(double* N, double* L , Object* object, int take){
+	double test = N[0]*L[0]+N[1]*L[1]+N[2]*L[2];
+	double final[3];
+	if (test<0){
+		return 0;
+	}
+	if (strcmp(object->name,"plane") ==0){
+		final = {test*objects[take]->plane.diffuse_color[0]
+		test*objects[take]->plane.diffuse_color[1]
+		test*objects[take]->plane.diffuse_color[2]};
+	}else if (strcmp(object->name,"sphere") ==0){
+		final ={test*objects[take]->sphere.diffuse_color[0]
+		test*objects[take]->sphere.diffuse_color[1]
+		test*objects[take]->sphere.diffuse_color[2]};
+	}
+	return final;
+	}
+	
+double* specular(double* R, double* V ,double* N, double* L , Object* object, int take){
+	double test = N[0]*L[0]+N[1]*L[1]+N[2]*L[2];
+	double cest = R[0]*V[0]+R[1]*V[1]+R[2]*V[2];
+	double final[3];
+	if (test == 0 && cest == 0){
+		return 0;
+	}
+	if (strcmp(object->name,"plane") ==0){
+		final = {cest*objects[take]->plane.specular_color[0]
+		cest*objects[take]->plane.specular_color[1]
+		cest*objects[take]->plane.specular_color[2]};
+	}else if (strcmp(object->name,"sphere") ==0){
+		final ={cest*objects[take]->sphere.specular_color[0]
+		cest*objects[take]->sphere.specular_color[1]
+		cest*objects[take]->sphere.specular_color[2]};
+	}
+	return final;	
+}	
+	
+double fang(Object* light ,double t ){
 	if (light->direction[0] == 0 && light->direction[1] == 0 && light->direction[2] == 0 ){
 		return 1;
 	}
-	double final ;
-	if (strcmp(object->name,"plane") == 0){
-		final = (object->plane.center[0] * light->light.center[0])+ (object->plane.center[1] * light->light.center[1])+ (object->plane.center[2] * light->light.center[2]);
-	}else if (strcmp(object->name,"sphere") == 0){
-		final = (object->sphere.center[0] * light->light.center[0])+ (object->sphere.center[1] * light->light.center[1])+ (object->sphere.center[2] * light->light.center[2]);
-	}
-	if (acos(final) > light->light.angulara0){
+	double vect1 = t-light->center[0];
+	double vect2 = t-light->center[1];
+	double vect3 = t-light->center[2];
+	double final = (vect1*light->direction[0])+(vect2*light->direction[1])+(vect3*light->direction[2]);
+	
+	if (final < 0){
 		return 0 ;
 	}else{
-		return  pow(final ,light->light.angulara0 );
+		return  pow(final ,light->light.angulara0);
 	}
 }
 
 double frad(Object* light, double d){
-	double eq  = light->light.radiala0 + light->light.radiala1*d +light->light.radiala2*pow(d,2);
-	return 1/eq;
+	if (d == INFINITY){
+		return 1;
+	}else{
+		double eq  = light->light.radiala0 + light->light.radiala1*d +light->light.radiala2*pow(d,2);
+		return 1/eq;
 	}
+}
 
 
 for (int y = 0; y < M; y += 1) {
@@ -71,21 +109,28 @@ for (int y = 0; y < M; y += 1) {
 			
 		}
       }
-
-    double* color = malloc(sizeof(double)*3);
+	int lightz = 0;
+	int hold = 0; 
+	Objects* light;
+	while(objects[lightz]->name != NULL){
+		if (strcmp(objects[lightz]->name , "light")==0){
+			light[hold] = objects[lightz];
+			hold += 1;
+		}
+	}
+	double* color = malloc(sizeof(double)*3);
     color[0] = 0; // ambient_color[0];
     color[1] = 0; // ambient_color[1];
     color[2] = 0; // ambient_color[2];
-
-    for (int j=0; light[j] != NULL; j+=1) {
+    for (int j=0; j < hold; j+=1) {
       // Shadow test
       double Ron[3] = {best_t * Rd[0] + Ro[0],
 		  best_t * Rd[1] + Ro[1],
 		  best_t * Rd[2] + Ro[2]
 	  };
-      double Rdn[3] = {light_position[0] - Ron[0],
-		light_position[1] - Ron[1],
-		light_position[2] - Ron[2]
+      double Rdn[3] = {light[j]->light.position[0] - Ron[0],
+		light[j]->light.position[1] - Ron[1],
+		light[j]->light.position[2] - Ron[2]
 	  };
       closest_shadow_object = NULL;
       for (int k=0; object[k] != NULL; k+=1) {
@@ -123,40 +168,43 @@ for (int y = 0; y < M; y += 1) {
 	// N, L, R, V
 	
 	double N[3];
-	if (strcmp(objects[closest_shadow_object]->name,"plane") == 0){
-		N = {objects[closest_shadow_object]->plane.normal[0],
-			objects[closest_shadow_object]->plane.normal[1],
-			objects[closest_shadow_object]->plane.normal[2]
+	if (strcmp(objects[flash]->name,"plane") == 0){
+		N = {objects[flash]->plane.normal[0],
+			objects[flash]->plane.normal[1],
+			objects[flash]->plane.normal[2]
 		};// plane
-	}else if(strcmp(objects[closest_shadow_object]->name,"sphere") == 0){
-	N = {Ron[0] - objects[closest_shadow_object]->sphere.center[0], 
-	Ron[1] - objects[closest_shadow_object]->sphere.center[1],
-	Ron[2] - objects[closest_shadow_object]->sphere.center[2]
+	}else if(strcmp(objects[flash]->name,"sphere") == 0){
+	N = {Ron[0] - objects[flash]->sphere.center[0], 
+	Ron[1] - objects[flash]->sphere.center[1],
+	Ron[2] - objects[flash]->sphere.center[2]
 	};// sphere
 	}
 	L = Rdn; // light_position - Ron;
 	normalize(Ron);
 	R = light_position-2(light_position[0]*Ron[0] + light_position[1]*Ron[1] + light_position[2]*Ron[2])*Ron;
 	V = Rd;
-	double diffuse[3] =  {1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[0],
-	1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[1],
-	1+N*L*objects[closest_shadow_object]->sphere.diffuse_color[2],
-	}; // uses object's diffuse color
-	double specular[3] = {pow(R*V,N)*objects[closest_shadow_object]->sphere.specular_color[0],
-	objects[closest_shadow_object]->sphere.diffuse_color[1],
-	objects[closest_shadow_object]->sphere.diffuse_color[2]
-	}; // uses object's specular color
-	color[0] += frad() * fang() * (diffuse[0] + specular[0]);
-	color[1] += frad() * fang() * (diffuse[1] + specular[1]);
-	color[2] += frad() * fang() * (diffuse[2] + specular[2]);
+	double diffusevect[3] = diffuse(N,L,closest_object,flash)
+	double specular[3]; // uses object's specular color
+	color[0] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[0] + specular[0]);
+	color[1] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[1] + specular[1]);
+	color[2] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[2] + specular[2]);
       }
     }
     // The color has now been calculated
 
-    buffer[...].r = (unsigned char)(255 * clamp(color[0]));
-    buffer[...].g = (unsigned char)(255 * clamp(color[1]);
-    buffer[...].b = (unsigned char)(255 * clamp(color[2]);
-
+    double temp;
+		char word[1000];
+		
+		temp= color[0] *255;
+		sprintf(word,"%lf ",temp);
+		fputs(word,fp);
+		temp= color[1] *255;
+		sprintf(word," %lf ",temp);
+		fputs(word,fp);
+		temp= color[2] *255;
+		sprintf(word,"%lf\n",temp);
+		fputs(word,fp);
+		
 
     }
     //printf("\n");
