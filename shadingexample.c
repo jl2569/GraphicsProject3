@@ -4,15 +4,10 @@ double* diffuse(double* N, double* L , Object* object, int take){
 	if (test<0){
 		return 0;
 	}
-	if (strcmp(object->name,"plane") ==0){
-		final = {test*objects[take]->plane.diffuse_color[0]
-		test*objects[take]->plane.diffuse_color[1]
-		test*objects[take]->plane.diffuse_color[2]};
-	}else if (strcmp(object->name,"sphere") ==0){
-		final ={test*objects[take]->sphere.diffuse_color[0]
-		test*objects[take]->sphere.diffuse_color[1]
-		test*objects[take]->sphere.diffuse_color[2]};
-	}
+	final = {test*objects[take]->diffuse_color[0]
+	test*objects[take]->diffuse_color[1]
+	test*objects[take]->diffuse_color[2]};
+
 	return final;
 	}
 	
@@ -23,15 +18,10 @@ double* specular(double* R, double* V ,double* N, double* L , Object* object, in
 	if (test == 0 && cest == 0){
 		return 0;
 	}
-	if (strcmp(object->name,"plane") ==0){
-		final = {cest*objects[take]->plane.specular_color[0]
-		cest*objects[take]->plane.specular_color[1]
-		cest*objects[take]->plane.specular_color[2]};
-	}else if (strcmp(object->name,"sphere") ==0){
-		final ={cest*objects[take]->sphere.specular_color[0]
-		cest*objects[take]->sphere.specular_color[1]
-		cest*objects[take]->sphere.specular_color[2]};
-	}
+	final = {cest*objects[take]->specular_color[0]
+	cest*objects[take]->specular_color[1]
+	cest*objects[take]->specular_color[2]};
+	
 	return final;	
 }	
 	
@@ -183,11 +173,11 @@ for (int y = 0; y < M; y += 1) {
 	normalize(Ron);
 	R = light_position-2(light_position[0]*Ron[0] + light_position[1]*Ron[1] + light_position[2]*Ron[2])*Ron;
 	V = Rd;
-	double diffusevect[3] = diffuse(N,L,closest_object,flash)
-	double specular[3]; // uses object's specular color
-	color[0] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[0] + specular[0]);
-	color[1] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[1] + specular[1]);
-	color[2] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[2] + specular[2]);
+	double diffusevect[3] = diffuse(N,L,closest_object,flash);
+	double specularvect[3] = specular(R,V,N,L,closest_object,flash); 
+	color[0] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[0] + specularvect[0]);
+	color[1] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[1] + specularvect[1]);
+	color[2] += frad(light[i], best_t) * fang(light[i],best_t) * (diffusevect[2] + specularvect[2]);
       }
     }
     // The color has now been calculated
