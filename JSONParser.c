@@ -93,41 +93,49 @@ double sphere_intersection(double* Ro, double* Rd,
   return -1;
 }
 
-double* diffuse(double* N, double* L , Object* object,double* final){
-	double test = N[0]*L[0]+N[1]*L[1]+N[2]*L[2];
+double* diffuse(double* N, double* L ,double* light ,Object* object,double* final){
+	double test = (N[0]*L[0])+(N[1]*L[1])+(N[2]*L[2]);
 	if (test<0){
-		return 0;
-	} 
-	final[0] = test*object->diffuse_color[0];
-	final[1] = test*object->diffuse_color[1];
-	final[2] = test*object->diffuse_color[2];
-	normalize(final);
-	return final;
+		final[0] = 0;
+		final[1] = 0;
+		final [2] = 0;
+		return final;
+	} else{
+		final[0] = object->diffuse_color[0]*light[0]*test;
+		final[1] = object->diffuse_color[1]*light[1]*test;
+		final[2] = object->diffuse_color[2]*light[2]*test;
+		return final;
+	}
 	}
 	
-double* specular(double* R, double* V ,double* N, double* L , Object* object ,double* final){
-	double test = N[0]*L[0]+N[1]*L[1]+N[2]*L[2];
-	double cest = pow((R[0]*V[0]+R[1]*V[1]+R[2]*V[2]),20);
-	if (test == 0 && cest == 0){
-		return 0;
-	}
-	final[0]=cest*object->specular_color[0];
-	final[1]=cest*object->specular_color[1];
-	final[2]=cest*object->specular_color[2];
+double* specular(double* R, double* V ,double* N, double* L ,double* light ,Object* object ,double* final){
 	
-	return final;	
+	double test = (N[0]*L[0])+(N[1]*L[1])+(N[2]*L[2]);
+	double cest = (R[0]*V[0])+(R[1]*V[1])+(R[2]*V[2]);
+	if (test >= 0 && cest >= 0){
+		final[0] = 0;
+		final[1] = 0;
+		final [2] = 0;
+		return final;
+	}else{
+		//normalize(object->specular_color);
+		cest= pow(cest,20);
+		final[0]=(object->specular_color[0]*light[0])*cest;
+		final[1]=(object->specular_color[1]*light[1])*cest;
+		final[2]=(object->specular_color[2]*light[2])*cest;
+		return final;	
+	}
 }	
 	
-double fang(Object* light ,double t ){
+double fang(Object* light ,double* t ){
 	if (light->light.direction[0] == 0 && light->light.direction[1] == 0 && light->light.direction[2] == 0 ){
 		return 1;
 	}
-	double vect[3] = { t-light->light.center[0],
-	t-light->light.center[1],
-	t-light->light.center[2]}; 
-	normalize(vect);
-	double final = (vect[1]*light->light.direction[0])+(vect[2]*light->light.direction[1])+(vect[3]*light->light.direction[2]);
-	if (final < 0){
+	//double vect[3] = { t[0]-light->light.center[0],
+	//t[1]-light->light.center[1],
+	//t[2]-light->light.center[2]}; 
+	double final = (t[0]*light->light.direction[0])+(t[1]*light->light.direction[1])+(t[2]*light->light.direction[2]);
+	if (final > cos(light->light.theta * (M_PI/180))){
 		return 0 ;
 	}else{
 		return  pow(final ,light->light.angulara0);
@@ -138,17 +146,31 @@ double frad(Object* light, double d){
 	if (d == INFINITY){
 		return 1;
 	}else{
-		double eq  = light->light.radiala0 + light->light.radiala1*d +light->light.radiala2*pow(d,2);
+		double eq  = light->light.radiala0 + light->light.radiala1*d +light->light.radiala2*sqr(d);
 		return 1/eq;
 	}
 }
 
 double distance(double* a, double* b){
-	normalize(a);
-	normalize(b);
 	return sqrt((((a[0] * b[0]) * (a[0] * b[0])) +((a[1] * b[1]) * (a[1] * b[1])) + ((a[2] * b[2]) * (a[2] * b[2]))));
 }
+double* reflect(double* a, double* b, double* final) {
+  double prod = (a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
+  final[0] = (2*prod*b[0]) - a[0];
+  final[1] = (2*prod*b[1]) - a[1];
+  final[2] = (2*prod*b[2]) - a[2];
+  return final;
+}
 
+double clamp(double color){
+	if (color < 0 ){
+		return 0;
+	}else if (color > 255){
+		return 255;
+	}else{
+		return color;
+	}
+}
 
 int line = 1;
 
@@ -657,92 +679,96 @@ int main(int argc, char *argv[] ) {
 		  (best_t * Rd[1]) + Ro[1],
 		  (best_t * Rd[2]) + Ro[2]
 	  };
-	  double light_distance = distance(Ron , light[j]->light.center);
       double Rdn[3] = {light[j]->light.center[0] - Ron[0],
 		light[j]->light.center[1] - Ron[1],
 		light[j]->light.center[2] - Ron[2]
 	  };
-    int shadow =1;
+	normalize(Rdn);
+	double light_distance = distance(Ron , light[j]->light.center);
+    int shadow =0;
 	
     for (int k=0; k<find; k ++) {
 	 
-	if (objects[k]->name == objects[closest_object]->name) continue;
-	// 
-	switch(objects[k]->kind)  {	
-		case 0:
-			t = plane_intersection(Ron, Rdn,
+		if (objects[k]->name == objects[closest_object]->name) continue;
+		double g = -1;
+		switch(objects[k]->kind)  {	
+			case 0:
+				g = plane_intersection(Ron, Rdn,
 				    objects[k]->plane.center,
 				    objects[k]->plane.normal);
-			break;
-		case 1:
-			if(objects[k]->sphere.radius == 0){
-				t = sphere_intersection(Ron, Rdn,
-					objects[k]->sphere.center,
-					1);
-			}else{
-			t = sphere_intersection(Ron, Rdn,
-					objects[k]->sphere.center,
-					objects[k]->sphere.radius);
-			}
-			break;
-		case 2:
-			break;
-		case 3:
-			break;
-		default:
-			break;
+				break;
+			case 1:
+				if(objects[k]->sphere.radius == 0){
+					g = sphere_intersection(Ron, Rdn,
+						objects[k]->sphere.center,
+						1);
+				}else{
+					g = sphere_intersection(Ron, Rdn,
+						objects[k]->sphere.center,
+						objects[k]->sphere.radius);
+				}
+				break;
+			case 2:
+				break;
+			case 3:
+				break;
+			default:
+				break;
 		}	
-	if (best_t > light_distance) {
-	  shadow = 0;
-	  continue;
-	}
-      }
-     if (shadow == 0 ) {
+		if ((g < light_distance) && (g >0)) {
+			shadow = 1;
+			break;
+		}
+   }
+    if ((shadow == 0) && (closest_object >=0) ) {
 	// N, L, R, V
-	double N[3];
-	if (strcmp(objects[closest_object]->name,"plane") == 0){
-		N[0] = objects[closest_object]->plane.normal[0];
-		N[1] =	objects[closest_object]->plane.normal[1];
-		N[2] =	objects[closest_object]->plane.normal[2];
+		double N[3];
+		if (strcmp(objects[closest_object]->name,"plane") == 0){
+			N[0] = objects[closest_object]->plane.normal[0];
+			N[1] =	objects[closest_object]->plane.normal[1];
+			N[2] =	objects[closest_object]->plane.normal[2];
 		// plane
-	}else if(strcmp(objects[closest_object]->name,"sphere") == 0){
-		N[0] = Ron[0] - objects[closest_object]->sphere.center[0];
-		
-		N[1] = Ron[1] - objects[closest_object]->sphere.center[1];
-		N[2] = Ron[2] - objects[closest_object]->sphere.center[2];
+		}else if(strcmp(objects[closest_object]->name,"sphere") == 0){
+			N[0] = Ron[0] - objects[closest_object]->sphere.center[0];
+			N[1] = Ron[1] - objects[closest_object]->sphere.center[1];
+			N[2] = Ron[2] - objects[closest_object]->sphere.center[2];
 	// sphere
-	}
+		}
 	
-	normalize(Ron);
-	double* L = Rdn; // light_position - Ron;
-
-	double R[3] = {light[j]->light.center[0] - 2*light[j]->light.center[0]*Ron[0],
-		light[j]->light.center[1] - 2*light[j]->light.center[1]*Ron[1],
-		light[j]->light.center[2] - 2*light[j]->light.center[2]*Ron[2],
-	};
-	double* V = Rd;
-	double final[3];
-	double output[3];
-	normalize(V);
-	diffuse(N,L,objects[closest_object],final);
-	specular(R,V,N,L,objects[closest_object],output);
-	color[0] += frad(light[j], best_t) * fang(light[j],best_t) * (final[0] + output[0]);
-	color[1] += frad(light[j], best_t) * fang(light[j],best_t) * (final[1] + output[1]);
-	color[2] += frad(light[j], best_t) * fang(light[j],best_t) * (final[2] + output[2]);
-      }
+		double* L = Rdn; // light_position - Ron;
+		//normalize(N);
+		double R[3];  
+		reflect(N,Rdn,R);
+		normalize(R);
+		double V[3] = {Rd[0]-1,
+		Rd[1]-1,
+		Rd[2]-1};
+		double diffusevect[3];
+		double specularvect[3];
+		normalize(V);
+		diffuse(N,L,light[j]->color,objects[closest_object],diffusevect);
+		specular(R,V,N,L,light[j]->color,objects[closest_object],specularvect);
+		color[0] += frad(light[j], light_distance) * fang(light[j],Rdn) * (diffusevect[0] + specularvect[0]);
+		color[1] += frad(light[j], light_distance) * fang(light[j],Rdn) * (diffusevect[1] + specularvect[1]);
+		color[2] += frad(light[j], light_distance) * fang(light[j],Rdn) * (diffusevect[2] + specularvect[2]);
     }
+ }
     // The color has now been calculated
+	if (best_t > 0 && best_t != INFINITY) {
     double temp;
 		char word[1000];
 		temp= color[0] *255;
-		sprintf(word,"%lf ",temp);
+		sprintf(word,"%lf ",clamp(temp));
 		fputs(word,fp);
 		temp= color[1] *255;
-		sprintf(word," %lf ",temp);
+		sprintf(word," %lf ",clamp(temp));
 		fputs(word,fp);
 		temp= color[2] *255;
-		sprintf(word,"%lf\n",temp);
+		sprintf(word,"%lf\n",clamp(temp));
 		fputs(word,fp);
+	}else{
+		fputs("0 0 0\n",fp);
+	}
 		
     }
     //printf("\n");
