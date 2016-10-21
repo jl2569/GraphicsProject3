@@ -92,7 +92,7 @@ double sphere_intersection(double* Ro, double* Rd,
 
   return -1;
 }
-
+// function that determines the diffuse reflection
 double* diffuse(double* N, double* L ,double* light ,Object* object,double* final){
 	double test = (N[0]*L[0])+(N[1]*L[1])+(N[2]*L[2]);
 	if (test<0){
@@ -107,7 +107,7 @@ double* diffuse(double* N, double* L ,double* light ,Object* object,double* fina
 		return final;
 	}
 	}
-	
+// function that determines the specular reflection
 double* specular(double* R, double* V ,double* N, double* L ,double* light ,Object* object ,double* final){
 	
 	double test = (N[0]*L[0])+(N[1]*L[1])+(N[2]*L[2]);
@@ -118,15 +118,14 @@ double* specular(double* R, double* V ,double* N, double* L ,double* light ,Obje
 		final [2] = 0;
 		return final;
 	}else{
-		//normalize(object->specular_color);
-		cest= pow(cest,20);
+		cest= pow(cest,50);
 		final[0]=(object->specular_color[0]*light[0])*cest;
 		final[1]=(object->specular_color[1]*light[1])*cest;
 		final[2]=(object->specular_color[2]*light[2])*cest;
 		return final;	
 	}
 }	
-	
+// function that determines the angular attenuation	
 double fang(Object* light ,double* t ){
 	if (light->light.direction[0] == 0 && light->light.direction[1] == 0 && light->light.direction[2] == 0 ){
 		return 1;
@@ -139,7 +138,7 @@ double fang(Object* light ,double* t ){
 		return  pow(final ,light->light.angulara0);
 	}
 }
-
+// function that determines the radial attenuation	
 double frad(Object* light, double d){
 	if (d == INFINITY){
 		return 1;
@@ -148,10 +147,11 @@ double frad(Object* light, double d){
 		return 1/eq;
 	}
 }
-
+// function that determines the distance between the closest object and the light	
 double distance(double* a, double* b){
 	return sqrt((sqr(a[0] - b[0]) + sqr(a[1] - b[1])  + sqr(a[2] - b[2]) ));
 }
+// function that determines the reflection of Rdn	
 double* reflect(double* a, double* b, double* final) {
   double prod = (a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
   final[0] = (2*prod*b[0]) - a[0];
@@ -159,7 +159,7 @@ double* reflect(double* a, double* b, double* final) {
   final[2] = (2*prod*b[2]) - a[2];
   return final;
 }
-
+//// function that keeps all number values under a specific limit 	
 double clamp(double color){
 	if (color < 0 ){
 		return 0;
@@ -245,10 +245,11 @@ char* next_string(FILE* json) {
 double next_number(FILE* json) {
   double value;
   fscanf(json, "%lf", &value);
-  //if (value == EOF) {
-  //   fprintf(stderr, "Error: Expected a number but not found.\n");
-  //   exit(1);
-  //  }
+  // with if statement the code will not run if value has a -1 in JSON file.
+ // if (value == EOF) {
+ //   fprintf(stderr, "Error: Expected a number but not found.\n");
+ //   exit(1);
+ //  }
   return value;
 }
 
@@ -528,8 +529,8 @@ Object** read_scene(char* filename , Object** objects) {
 	    double value = next_number(json);
 		valuesetter(type, key,value, objects,elements);
 	  } else if ((strcmp(key, "color") == 0) ||
-		     (strcmp(key, "position") == 0) ||
-		     (strcmp(key, "normal") == 0) ||
+		  (strcmp(key, "position") == 0) ||
+		   (strcmp(key, "normal") == 0) ||
 	      (strcmp(key, "direction") == 0) ||
 	      (strcmp(key, "diffuse_color") == 0) ||
 	      (strcmp(key, "specular_color") == 0)) {
@@ -736,11 +737,11 @@ int main(int argc, char *argv[] ) {
 		double* L = Rdn; // light_position - Ron;
 		normalize(N);
 		double R[3];  
-		reflect(N,L,R);
+		reflect(N,Rdn,R);
 		//normalize(R);
-		double V[3] = {Rd[0]-1,
-		Rd[1]-1,
-		Rd[2]-1};
+		double V[3] = {Rd[0]-.5,
+		Rd[1]-1.5,
+		Rd[2]-.5};
 		double diffusevect[3];
 		double specularvect[3];
 		normalize(V);
