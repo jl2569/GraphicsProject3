@@ -101,9 +101,9 @@ double* diffuse(double* N, double* L ,double* light ,Object* object,double* fina
 		final [2] = 0;
 		return final;
 	} else{
-		final[0] = object->diffuse_color[0]*light[0]*test;
-		final[1] = object->diffuse_color[1]*light[1]*test;
-		final[2] = object->diffuse_color[2]*light[2]*test;
+		final[0] = (object->diffuse_color[0]*light[0])*test;
+		final[1] = (object->diffuse_color[1]*light[1])*test;
+		final[2] = (object->diffuse_color[2]*light[2])*test;
 		return final;
 	}
 	}
@@ -131,9 +131,7 @@ double fang(Object* light ,double* t ){
 	if (light->light.direction[0] == 0 && light->light.direction[1] == 0 && light->light.direction[2] == 0 ){
 		return 1;
 	}
-	//double vect[3] = { t[0]-light->light.center[0],
-	//t[1]-light->light.center[1],
-	//t[2]-light->light.center[2]}; 
+
 	double final = (t[0]*light->light.direction[0])+(t[1]*light->light.direction[1])+(t[2]*light->light.direction[2]);
 	if (final > cos(light->light.theta * (M_PI/180))){
 		return 0 ;
@@ -152,7 +150,7 @@ double frad(Object* light, double d){
 }
 
 double distance(double* a, double* b){
-	return sqrt((((a[0] * b[0]) * (a[0] * b[0])) +((a[1] * b[1]) * (a[1] * b[1])) + ((a[2] * b[2]) * (a[2] * b[2]))));
+	return sqrt((sqr(a[0] - b[0]) + sqr(a[1] - b[1])  + sqr(a[2] - b[2]) ));
 }
 double* reflect(double* a, double* b, double* final) {
   double prod = (a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
@@ -736,10 +734,10 @@ int main(int argc, char *argv[] ) {
 		}
 	
 		double* L = Rdn; // light_position - Ron;
-		//normalize(N);
+		normalize(N);
 		double R[3];  
-		reflect(N,Rdn,R);
-		normalize(R);
+		reflect(N,L,R);
+		//normalize(R);
 		double V[3] = {Rd[0]-1,
 		Rd[1]-1,
 		Rd[2]-1};
